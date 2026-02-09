@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HighRoller: Fate or Fold</title>
+
+<style>
+:root {
+  --bg: #0f172a;
+  --card: #020617;
+  --text: #e5e7eb;
+  --accent: #22d3ee;
+  --danger: #ef4444;
+  --success: #22c55e;
+}
+
+.light {
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #020617;
+  --accent: #0284c7;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  transition: background 0.3s;
+}
+
+.game {
+  background: var(--card);
+  padding: 1.5rem;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+}
+
+h1 {
+  margin: 0.5rem 0;
+  font-size: 1.8rem;
+}
+
+.card img {
+  width: 140px;
+  margin: 1rem auto;
+}
+
+.buttons {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+button {
+  flex: 1;
+  padding: 0.8rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #000;
+  cursor: pointer;
+}
+
+button:active {
+  transform: scale(0.96);
+}
+
+.stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+.toggle {
+  cursor: pointer;
+  margin-top: 0.8rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.shake {
+  animation: shake 0.4s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-6px); }
+  100% { transform: translateX(0); }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 1.5rem; }
+  .card img { width: 110px; }
+}
+</style>
+</head>
+
+<body>
+<div class="game" id="game">
+  <h1>🃏 HighRoller</h1>
+  <p>Will the next card be higher or lower?</p>
+
+  <div class="card">
+    <img id="cardImg" src="" alt="Card" />
+  </div>
+
+  <div class="buttons">
+    <button onclick="guess('higher')">⬆️ Higher</button>
+    <button onclick="guess('lower')">⬇️ Lower</button>
+  </div>
+
+  <div class="stats">
+    <div>🔥 Score: <span id="score">0</span></div>
+    <div>🏆 Best: <span id="highscore">0</span></div>
+  </div>
+
+  <div class="toggle" id="themeToggle" onclick="toggleTheme()">
+    🌙 Toggle Dark Mode
+  </div>
+</div>
+
+<audio id="correctSound" src="right.mp3"></audio>
+<audio id="wrongSound" src="wrong.mp3"></audio>
+
+<script>
+const API = "https://deckofcardsapi.com/api/deck/new/draw/?count=1";
+
+let currentValue = null;
+let score = 0;
+let highscore = localStorage.getItem("highscore") || 0;
+
+document.getElementById("highscore").textContent = highscore;
+
+const valueMap = {
+  "ACE": 14,
+  "KING": 13,
+  "QUEEN": 12,
+  "JACK": 11
+};
+
+function cardValue(card) {
+  return valueMap[card] || parseInt(card);
+}
+
+async function drawCard() {
+  const res = await fetch(API);
+  const data = await res.json();
+  const card = data.cards[0];
+
+  document.getElementById("cardImg").src = card.image;
+  return cardValue(card.value);
+}
+
+async function startGame() {
+  currentValue = await drawCard();
+}
+
+async function guess(type) {
+  const nextValue = await drawCard();
+  const correct =
+    (type === "higher" && nextValue > currentValue) ||
+    (type === "lower" && nextValue < currentValue);
+
+  if (correct) {
+    score++;
+    document.getElementById("correctSound").play();
+  } else {
+    document.getElementById("wrongSound").play();
+    document.getElementById("game").classList.add("shake");
+    setTimeout(() => document.getElementById("game").classList.remove("shake"), 400);
+
+    if (score > highscore) {
+      highscore = score;
+      localStorage.setItem("highscore", highscore);
+    }
+    score = 0;
+  }
+
+  document.getElementById("score").textContent = score;
+  document.getElementById("highscore").textContent = highscore;
+  currentValue = nextValue;
+}
+
+function updateToggleText() {
+  const toggle = document.getElementById("themeToggle");
+  const isLight = document.body.classList.contains("light");
+
+  toggle.textContent = isLight
+    ? "🌙 Toggle Dark Mode"
+    : "☀️ Toggle Light Mode";
+}
+
+function toggleTheme() {
+  document.body.classList.toggle("light");
+  localStorage.setItem(
+    "theme",
+    document.body.classList.contains("light") ? "light" : "dark"
+  );
+  updateToggleText();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (localStorage.getItem("theme") === "light") {
+    document.body.classList.add("light");
+  }
+  updateToggleText();
+});
+
+startGame();
+</script>
+</body>
+</html>
