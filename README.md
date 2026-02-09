@@ -22,8 +22,7 @@ Test your luck, chase high scores, and get roasted by probability.
 
 ## 🚀 Live Demo
 
-> _(Optional – add your deployed URL here)_  
-> https://higherorlower.pages.dev
+> [https://higherorlower.pages.dev](https://higherorlower-d1s.pages.dev/)
 
 ---
 
